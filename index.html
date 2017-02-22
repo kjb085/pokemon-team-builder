@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<head>
+    <link href='css/bootstrap.min.css' rel='stylesheet'>
+    <link href='css/font-awesome.min.css' rel='stylesheet'>
+    <link href='css/sweetalert.css' rel='stylesheet'>
+    <link href='css/style.css' rel='stylesheet'>
+    <link href='css/types.css' rel='stylesheet'>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js'></script>
+</head>
+<body>
+<div id="app">
+    <div class="jumbotron shrink-padding">
+        <div class="container-fluid">
+            <div class="row">
+                <div class='col-sm-6'>
+                    <h1>Your team:</h1>
+                </div>
+                <div class="col-sm-2 col-sm-offset-2 text-right">
+                    <h3>Remaining:</h3>
+                </div>
+                <div class="col-sm-2 text-right">
+                    <h3>$ {{moneyRemaining}}</h3>
+                </div>
+            </div>
+            <div class="row row-buffer">
+                <div id='user-team'>
+                    <div v-for="(teamMember, index) in user.team" class='team-holder col-sm-2' style='border: solid black 2px; height: 300px;'>
+                        <div class='team-contents text-center' v-if="teamMember.name">
+                            <div v-if="teamMember" class=''></div>
+                            <h2>{{teamMember.name}}</h2>
+                            <img v-show="true" v-bind:src="teamMember.imgSrc" height="180" width="180">
+                            <p>${{teamMember.value}} <a class="btn btn-primary" role="button" v-on:click='updateDetailView(teamMember, true, index)' >Details</a></p> <!-- data-toggle="modal" data-target="#pokemon-detail" -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div v-show="!user.isLoggedIn">
+                    <div class="col-sm-1">
+                        <a class="btn btn-success" data-toggle="modal" data-target="#sign-up">Sign Up</a>
+                    </div>
+                    <div class="col-sm-3">
+                        <a class="btn btn-default" data-toggle="modal" data-target="#sign-in">Sign In</a>
+                    </div>
+                </div>
+                <div v-show="user.isLoggedIn">
+                    <div class="col-sm-1">
+                        <a class="btn btn-success" v-on:click="user.saveTeam()">Save</a>
+                    </div>
+                    <div class="col-sm-1">
+                        <a class="btn btn-primary">Load</a>
+                    </div>
+                    <div class="col-sm-1">
+                        <a class="btn btn-info">Share</a>
+                    </div>
+                    <div class="col-sm-1">
+                        <a class="btn btn-danger" v-on:click="user.signOut()">Log Out</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+          <!-- Example row of columns -->
+        <div class="row" style="display: flex;">
+            <div class="col-md-1 col-md-offset-1 cycle-container text-center" style=""> <!-- change this to half offset -->
+                <i v-on:click='cycleOptions(false, leftJump)' class="fa big-arrow fa-arrow-left" aria-hidden="true"></i>
+                <input v-model='leftJump' class='form-control' type='number' min='1' />
+            </div>
+            <div v-for="option in options" class="col-md-3 text-center">
+                <h2>{{option.name}}</h2>
+                <img v-show="true" v-bind:src="option.imgSrc" height="180" width="180">
+                <p>${{option.value}}</p>
+                <p><button type="button" v-on:click="user.addToTeam(option)" class="btn btn-success" role="button">Add</button></p>
+                <p><a class="btn btn-primary" role="button" v-on:click='updateDetailView(option, false)' >Details</a></p> <!-- data-toggle="modal" data-target="#pokemon-detail" -->
+            </div>
+            <div class="col-md-1 cycle-container text-center">
+                <i v-on:click='cycleOptions(true, rightJump)' class="fa big-arrow fa-arrow-right" aria-hidden="true"></i>
+                <input v-model='rightJump' class='form-control' type='number' min='1' />
+            </div>
+        </div>
+
+        <hr>
+
+    </div>
+
+    <div class="container">
+      <footer>
+        <p>&copy; 2017 Company, Inc.</p>
+      </footer>
+    </div> <!-- /container -->
+
+    <!-- Search view -->
+    <div id="pokemon-search" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-content">
+            <!-- Close button -->
+            <div class="close-modal" data-dismiss="modal">
+                <div class="lr">
+                    <div class="rl"></div>
+                </div>
+            </div>
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-8 col-lg-offset-2">
+                        <div class="modal-title">
+                            <h2></h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="row"></div>
+                <div class="row modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign Up -->
+    <div id="sign-up" class="modal fade modal-vertical-centered" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Sign Up</h4>
+                </div>
+                <div class="modal-body">
+                    <div id='sign-up-input' style='width: 400px'>
+                        <div class='input-group'>
+                            <span class='input-group-addon'>Email:</span>
+                            <input id='sign-up-email' v-model="signInUp.email" class='form-control' type='email'>
+                        </div>
+                        <div class='input-group'>
+                            <span class='input-group-addon'>Password:</span>
+                            <input id='sign-up-password' v-model="signInUp.pass" class='form-control' type='password'>
+                        </div>
+                        <div class='input-group'>
+                            <span class='input-group-addon'>Confirm Password:</span>
+                            <input id='sign-up-password-conf' v-model="signInUp.passConf" class='form-control' type='password'>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class='text-center'>
+                        <button class="btn btn-success" v-on:click="user.signUp(signInUp)" role="button">Sign Up</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Just Kidding</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign In -->
+    <div id="sign-in" class="modal fade modal-vertical-centered" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Sign In</h4>
+                </div>
+                <div class="modal-body">
+                    <div id='sign-up-input' style='width: 400px'>
+                        <div class='input-group'>
+                            <span class='input-group-addon'>Email:</span>
+                            <input id='sign-in-email' v-model='signInUp.email' class='form-control' type='email'>
+                        </div>
+                        <div class='input-group'>
+                            <span class='input-group-addon'>Password:</span>
+                            <input id='sign-in-password' v-model='signInUp.pass' class='form-control' type='password'>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class='text-center'>
+                        <a class="btn btn-success" v-on:click="user.signIn(signInUp)">Sign In</a>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Maybe Later</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail view -->
+    <div id="pokemon-detail" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-content">
+            <!-- Close button -->
+            <div class="close-modal" v-on:click="closeDetailView(detail)"> <!-- data-dismiss="modal" -->
+                <div class="lr">
+                    <div class="rl"></div>
+                </div>
+            </div>
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-4 text-left">
+                        <div class="row modal-title">
+                            <h2>{{detail.species}}</h2>
+                        </div>
+                        <div class="row">
+                            <img v-bind:src="detailImg" height="250" width="250">
+                        </div>
+                        <div class="row row-buffer">
+                            <a v-for="typeObj in detail.types" class="type text-center" v-bind:class="[typeObj.type.name]" v-bind:href="typeLink(typeObj.type.name)" target="_blank">
+                                {{ typeObj.type.name.capitalize() }}
+                            </a>
+                        </div>
+                        <div v-bind:class="{hide: !detailInputs}" class="row inputs"> <!--  -->
+                            <div class="input-group">
+                                <span class="input-group-addon">Name: </span>
+                                <input v-model="detail.name" class="form-control" />
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-addon">Shiny: </span>
+                                <input type="checkbox" class="form-control" v-model="detail.isShiny" />
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-addon">Gender:</span>
+                                <div style="display: flex;">
+                                    <span style="align-self: center;">Male: </span><input class="form-control" type="radio" v-model="detail.isMale" v-bind:value="true"  />
+                                    <span style="align-self: center;">Female: </span><input class="form-control" type="radio" v-model="detail.isMale" v-bind:value="false" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-8 text-center">
+                        <div class="row">
+                            <div v-if="detail.abilities.length > 0" class="col-sm-6">
+                                <h3>Abilities</h3>
+                                <ul class="text-left">
+                                    <li v-for="abilityObj in detail.abilities">
+                                        {{abilityObj.ability.name.capitalize()}} <span v-if="abilityObj.is_hidden">(Hidden)</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div v-if="detail.moves.length > 0" class="col-sm-6">
+                                <h3>Moves (Example)</h3>
+                                <ul class="text-left">
+                                    <li v-for="(moveObj, index) in detail.moves" v-if="index < 4">
+                                        {{moveObj.move.name.formatMoveName()}}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <h3>Base Stats</h3>
+                            <div class='col-sm-8 col-sm-offset-2' style='display: flex; justify-content: center;'>
+                                <!-- <div style="height: 750px; width: 750px;"> -->
+                                    <canvas id="stats-chart" ></canvas>
+                                <!-- </div> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+
+<script src='js/sweetalert.min.js'></script>
+<script src="https://www.gstatic.com/firebasejs/3.6.9/firebase.js"></script>
+<script>
+  // Initialize Firebase
+  var config = {
+    apiKey: "AIzaSyBrQS9-yyF1qyC_z3cYu9RyfGktj-tjqOY",
+    authDomain: "team-builder-c1d50.firebaseapp.com",
+    databaseURL: "https://team-builder-c1d50.firebaseio.com",
+    storageBucket: "team-builder-c1d50.appspot.com",
+    messagingSenderId: "346227244211"
+  };
+  firebase.initializeApp(config);
+
+  var db = firebase.database();
+</script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.9/vue.min.js'></script>
+<script src='js/bootstrap.min.js'></script>
+<script src='global.js'></script>
+<script src='models/pokemon.js'></script>
+<script src='models/user.js'></script>
+<script src='app.js'></script>

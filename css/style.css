@@ -1,0 +1,147 @@
+.shrink-padding {
+    padding: 24px 0;
+    margin-bottom: 0px;
+}
+
+.big-arrow {
+    font-size: 50px;
+    cursor: pointer;
+    margin-bottom: 25px;
+}
+
+.cycle-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-self: center;
+}
+
+.pointer {
+    cursor: pointer;
+}
+
+.row-buffer {
+    margin-bottom: 20px;
+}
+
+.type {
+    border: solid 2px black;
+    border-radius: 20px;
+    display: inline-block;
+    width: 100px;
+    color: #FFF;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.type:hover {
+    text-decoration: none;
+}
+
+#pokemon-detail .modal-content {
+    /*padding: 100px 0;*/
+    /*padding-top: 5em;*/
+    min-height: 100%;
+    border: 0;
+    border-radius: 0;
+    text-align: center;
+    background-clip: border-box;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    background-color: #d3d3d3;
+}
+
+#pokemon-detail .modal-content h2 {
+    margin-bottom: 15px;
+    font-size: 3em;
+    color: black;
+    text-shadow: 0px 0px #d3d3d3;
+}
+
+#pokemon-detail .modal-content p {
+    margin-bottom: 30px;
+}
+
+#pokemon-detail .modal-content p.item-intro {
+    margin: 20px 0 30px;
+    font-family: "Droid Serif","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 16px;
+    font-style: italic;
+}
+
+#pokemon-detail .modal-content ul.list-inline {
+    margin-top: 0;
+    margin-bottom: 30px;
+}
+
+#pokemon-detail .close-modal {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    width: 75px;
+    height: 75px;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+#pokemon-detail .close-modal:hover {
+    opacity: .3;
+}
+
+#pokemon-detail .close-modal .lr {
+    z-index: 1051;
+    width: 1px;
+    height: 75px;
+    margin-left: 35px;
+    background-color: #222;
+    -webkit-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+
+#pokemon-detail .close-modal .lr .rl {
+    z-index: 1052;
+    width: 1px;
+    height: 75px;
+    background-color: #222;
+    -webkit-transform: rotate(90deg);
+    -ms-transform: rotate(90deg);
+    transform: rotate(90deg);
+}
+
+.footer {
+    padding-top: 4em;
+    text-align: center;
+}
+
+.footer .copyright {
+    font-family: Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif;
+    line-height: 30px;
+}
+
+.footer .quicklinks {
+  margin-bottom: 0;
+  font-family: Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  line-height: 30px;
+}
+
+.no-bullets {
+  list-style-type: none;
+}
+
+.fade {
+    opacity:0;
+    -webkit-transition:opacity 0.15s linear;
+    -o-transition:opacity 0.15s linear;
+    transition:opacity 0.15s linear
+}
+
+.modal-vertical-centered {
+  transform: translate(0, 35%) !important;
+  -ms-transform: translate(0, 35%) !important; /* IE 9 */
+  -webkit-transform: translate(0, 35%) !important; /* Safari and Chrome */
+}
+
+.sign-up-addon {
+    width: 120px;
+}
