@@ -1,109 +1,74 @@
 // Vue.js
+// register modal component
+Vue.component('modal', {
+  template: '#modal-template'
+});
+
 var app = new Vue({
     el: "#app",
     data: {
-        currentId: 0,
-        options: [
-            new Pokemon(),
-            new Pokemon(),
-            new Pokemon(),
-        ],
+        // teamOptionsToggle: false,
+        options: new Options(),
         detail: new Pokemon(),
-        leftJump: 3,
-        rightJump: 3,
-        teamOptionsToggle: false,
         user: new User(),
+        team: new Team(),
+        // Helpers are lazy loaded - use getter methods to access
+        helpers: {
+            auth: null,
+            content: null,
+            graph: null,
+        },
         signInUp: {
             email: "",
             pass: "",
             passConf: ""
         },
+        modal: {
+            loadTeam: false,
+        }
     },
     mounted: function() {
-        var id = this.currentId + 1;
-
-        this.populateOptions(id);
-
-        firebase.auth().onAuthStateChanged(function(user) {
-            if (user) {
-                app.user.isLoggedIn = true;
-                app.user.email = user.email;
-                app.user.uid = user.uid;
-
-                // console.log(user);
-                //
-                // db.ref('user/' + user.uid + '/team/').once('value').then(function(snapshot) {
-                //     console.log(snapshot);
-                // });
-            }
-        });
-
-        this.user.init(teamSize, startingMoney);
+        this.getAuthHelper().createAuthChangeListener();
+        this.user.init(this.getAuthHelper(), this.getContentHelper());
+        this.options.init(this.getContentHelper());
     },
     methods: {
-        populateOptions: function(startId) {
-            for (var id = startId, counter = 0 ; id < startId + displayOptions ; id++, counter++) {
-                this.firebaseRequest(id, counter);
-            }
-        },
-        firebaseRequest: function(id, index) {
-            db.ref('pokemon/' + id).once('value').then(function(snapshot) {
-                var val = snapshot.val();
-
-                if (val) {
-                    console.log(id, val);
-                    app.options[index].init(val);
-                } else {
-                    app.pokeApiRequest(id, index);
-                }
-
-                app.currentId++;
-            });
-        },
-        pokeApiRequest: function(id, index) {
-            $.ajax({
-                url: "http://pokeapi.co/api/v2/pokemon/" + id + "/",
-                type: "get",
-                dataType: "json",
-                success: function(data) {
-                    // console.log('api call');
-                    console.log(id, data);
-
-                    app.options[index].init(data);
-
-                    db.ref('pokemon/' + id).set(data);
-                },
-                error: function() {
-                    console.log("error");
-                }
-            });
-        },
-        cycleOptions: function(forward, jumpSize) {
-            app.currentId += jumpSize - displayOptions;
-
-            var startId = app.currentId;
-
-            if (forward) {
-                startId++;
-            } else {
-                startId -= displayOptions + 2;
-                app.currentId -= displayOptions + 3;
+        getGraphHelper: function () {
+            if (this.helpers.graph === null) {
+                this.helpers.graph = new GraphHelper();
             }
 
-            app.populateOptions(startId);
+            return this.helpers.graph;
+        },
+        getContentHelper: function () {
+            if (this.helpers.content === null) {
+                // Get firebase from global scope
+                this.helpers.content = new ContentHelper(firebase);
+            }
+
+            return this.helpers.content;
+        },
+        getAuthHelper: function () {
+            if (this.helpers.auth === null) {
+                // Get firebase from global scope
+                this.helpers.auth = new AuthHelper(firebase);
+            }
+
+            return this.helpers.auth;
         },
         updateDetailView: function(pokemon, isTeamMember, index) {
-            app.detail.isTeamMember = isTeamMember;
             app.detail.index = index;
 
             app.detail.transferIn(pokemon);
-            app.createGraph(pokemon.name, pokemon.stats);
+            this.getGraphHelper().createGraph(pokemon.name, pokemon.stats);
+
+            console.log(this.detail);
 
             $('#pokemon-detail').modal('show');
         },
         closeDetailView: function(detail) {
             if (detail.isTeamMember) {
-                app.user.updateTeamMember(detail);
+                app.team.updateTeamMember(detail);
             }
 
             $('#pokemon-detail').modal('hide');
@@ -114,77 +79,15 @@ var app = new Vue({
         searchPokemon: function() {
 
         },
-        createGraph: function(name, stats) {
-            var statsArr = [];
-
-            stats.forEach(function(statObj) {
-                var idx = app.findGraphIdx(statObj);
-
-                statsArr[idx] = statObj.base_stat;
-            });
-
-            console.log(statsArr);
-
-            var data = {
-                    labels: ["HP", "Attack", "Defense", "Speed", "Sp Def", "Sp Atk"],
-                    datasets: [
-                        {
-                            label: name + " Stat Graph",
-                            backgroundColor: "rgba(255,99,132,0.2)",
-                            borderColor: "rgba(255,99,132,1)",
-                            pointBackgroundColor: "rgba(255,99,132,1)",
-                            pointBorderColor: "#fff",
-                            pointHoverBackgroundColor: "#fff",
-                            pointHoverBorderColor: "rgba(255,99,132,1)",
-                            data: statsArr
-                        },
-                    ]
-                },
-                myRadarChart = new Chart("stats-chart", {
-                    type: 'radar',
-                    data: data,
-                    options: {
-                        scale: {
-                            ticks: {
-                                beginAtZero: true,
-                                max: 260
-                            }
-                        },
-                        responsive: true,
-                        defaultFontSize: 1
-                    }
-                });
-        },
-        findGraphIdx: function(statObj) {
-            switch (statObj.stat.name) {
-                case "hp":
-                    return 0;
-                case "attack":
-                    return 1;
-                case "defense":
-                    return 2;
-                case "speed":
-                    return 3;
-                case "special-defense":
-                    return 4;
-                case "special-attack":
-                    return 5;
-                default:
-                    return false;
-            }
-        },
-        saveConfirm: function() {
-
-        }
     },
     computed: {
         detailImg: function() {
             return this.detail.updateImg();
         },
         moneyRemaining: function() {
-            var remaining = this.user.moneyRemaining;
+            var remaining = this.team.startingBudget;
 
-            this.user.team.forEach(function(teamMember) {
+            this.team.members.forEach(function(teamMember) {
                 remaining -= teamMember.value;
             });
 
@@ -194,10 +97,10 @@ var app = new Vue({
 
             return parseFloat(remaining).toFixed(2);
         },
-        detailInputs: function() {
-            // console.log(this.detail);
-            return this.detail.isTeamMember;
-        }
+        // detailInputs: function() {
+        //     // console.log(this.detail);
+        //     return this.detail.isTeamMember;
+        // }
     },
     watch: {
         // detailImg: function() {

@@ -5,27 +5,72 @@
     <link href='css/sweetalert.css' rel='stylesheet'>
     <link href='css/style.css' rel='stylesheet'>
     <link href='css/types.css' rel='stylesheet'>
+    <link href='css/modal.css' rel='stylesheet'>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js'></script>
+    <!-- template for the modal component -->
+    <script type="text/x-template" id="modal-template">
+      <transition name="modal">
+        <div class="modal-mask">
+          <div class="modal-wrapper">
+            <div class="modal-container">
+
+              <div class="modal-header">
+                <slot name="header">
+                  default header
+                </slot>
+              </div>
+
+              <div class="modal-body">
+                <slot name="body">
+                  default body
+                </slot>
+              </div>
+
+              <div class="modal-footer">
+                <slot name="footer">
+                  default footer
+                  <button class="modal-default-button" @click="$emit('close')">
+                    OK
+                  </button>
+                </slot>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </script>
 </head>
 <body>
 <div id="app">
     <div class="jumbotron shrink-padding">
         <div class="container-fluid">
             <div class="row">
-                <div class='col-sm-6'>
-                    <h1>Your team:</h1>
+                <div class="col-sm-12">
+                    <h1>Pokemon Team Builder</h1>
                 </div>
-                <div class="col-sm-2 col-sm-offset-2 text-right">
-                    <h3>Remaining:</h3>
+            </div>
+            <div class="row" style="display: flex; align-items:center;">
+                <div class='col-sm-8'>
+                    <h2 @click="team.editName = true" v-bind:class="{ hidden: team.editName }">{{team.name}}:</h2>
+                    <div v-bind:class="{ hidden: !team.editName }" style="display: flex; align-items: center;">
+                        <input type="text" v-model="team.name"  class="form-control" style="font-size: 30px; height: 40px; width: 85%;" />
+                        <div class="btn btn-primary" @click="team.editName = false" style="font-size: 20px; margin: 10px;">
+                            Save
+                        </div>
+                    </div>
                 </div>
-                <div class="col-sm-2 text-right">
+                <div class="col-sm-2 col-sm-offset-1 text-right">
+                    <h3>Remaining Budget:</h3>
+                </div>
+                <div class="col-sm-1 text-right">
                     <h3>$ {{moneyRemaining}}</h3>
                 </div>
             </div>
             <div class="row row-buffer">
                 <div id='user-team'>
-                    <div v-for="(teamMember, index) in user.team" class='team-holder col-sm-2' style='border: solid black 2px; height: 300px;'>
+                    <div v-for="(teamMember, index) in team.members" class='team-holder col-sm-2' v-bind:class="teamMember.holderClasses">
+                        <!-- {{teamMember.types[0].name}}-border -->
                         <div class='team-contents text-center' v-if="teamMember.name">
                             <div v-if="teamMember" class=''></div>
                             <h2>{{teamMember.name}}</h2>
@@ -46,10 +91,10 @@
                 </div>
                 <div v-show="user.isLoggedIn">
                     <div class="col-sm-1">
-                        <a class="btn btn-success" v-on:click="user.saveTeam()">Save</a>
+                        <a class="btn btn-success" v-on:click="user.saveTeam(team)">Save</a>
                     </div>
                     <div class="col-sm-1">
-                        <a class="btn btn-primary">Load</a>
+                        <a class="btn btn-primary" @click="modal.loadTeam = true">Load</a>
                     </div>
                     <div class="col-sm-1">
                         <a class="btn btn-info">Share</a>
@@ -66,19 +111,19 @@
           <!-- Example row of columns -->
         <div class="row" style="display: flex;">
             <div class="col-md-1 col-md-offset-1 cycle-container text-center" style=""> <!-- change this to half offset -->
-                <i v-on:click='cycleOptions(false, leftJump)' class="fa big-arrow fa-arrow-left" aria-hidden="true"></i>
-                <input v-model='leftJump' class='form-control' type='number' min='1' />
+                <i v-on:click='options.cycle(false)' class="fa big-arrow fa-arrow-left" aria-hidden="true"></i>
+                <input v-model='options.jump.left' class='form-control' type='number' min='1' />
             </div>
-            <div v-for="option in options" class="col-md-3 text-center">
+            <div v-for="option in options.pokemon" class="col-md-3 text-center">
                 <h2>{{option.name}}</h2>
                 <img v-show="true" v-bind:src="option.imgSrc" height="180" width="180">
                 <p>${{option.value}}</p>
-                <p><button type="button" v-on:click="user.addToTeam(option)" class="btn btn-success" role="button">Add</button></p>
+                <p><button type="button" v-on:click="team.add(option)" class="btn btn-success" role="button">Add</button></p>
                 <p><a class="btn btn-primary" role="button" v-on:click='updateDetailView(option, false)' >Details</a></p> <!-- data-toggle="modal" data-target="#pokemon-detail" -->
             </div>
             <div class="col-md-1 cycle-container text-center">
-                <i v-on:click='cycleOptions(true, rightJump)' class="fa big-arrow fa-arrow-right" aria-hidden="true"></i>
-                <input v-model='rightJump' class='form-control' type='number' min='1' />
+                <i v-on:click='options.cycle(true)' class="fa big-arrow fa-arrow-right" aria-hidden="true"></i>
+                <input v-model='options.jump.right' class='form-control' type='number' min='1' />
             </div>
         </div>
 
@@ -202,7 +247,8 @@
                                 {{ typeObj.type.name.capitalize() }}
                             </a>
                         </div>
-                        <div v-bind:class="{hide: !detailInputs}" class="row inputs"> <!--  -->
+                        <!-- <div v-bind:class="{hide: !detailInputs}" class="row inputs"> -->
+                        <div v-bind:class="{hide: !detail.isTeamMember}" class="row inputs"> <!--  -->
                             <div class="input-group">
                                 <span class="input-group-addon">Name: </span>
                                 <input v-model="detail.name" class="form-control" />
@@ -252,6 +298,19 @@
             </div>
         </div>
     </div>
+
+    <modal v-if="modal.loadTeam" @close="modal.loadTeam = false">
+        <h2>Teams</h2>
+        <ul>
+            <li v-for="existingTeam in user.existingTeams">
+                {{existingTeam.name}}
+                <div class="btn btn-primary" @click="team.load(existingTeam)">
+                    Load
+                </div>
+            </li>
+        </ul>
+        <h3 slot="header">custom header</h3>
+    </modal>
 </div>
 
 </body>
@@ -268,12 +327,16 @@
     messagingSenderId: "346227244211"
   };
   firebase.initializeApp(config);
-
-  var db = firebase.database();
 </script>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.9/vue.min.js'></script>
+<!-- <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.6/vue.min.js'></script> -->
 <script src='js/bootstrap.min.js'></script>
 <script src='global.js'></script>
+<script src='helpers/authHelper.js'></script>
+<script src='helpers/contentHelper.js'></script>
+<script src='helpers/graphHelper.js'></script>
 <script src='models/pokemon.js'></script>
+<script src='models/team.js'></script>
+<script src='models/options.js'></script>
 <script src='models/user.js'></script>
 <script src='app.js'></script>

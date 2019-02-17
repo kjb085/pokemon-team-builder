@@ -1,5 +1,5 @@
-// Models
 var Pokemon = function() {
+    this.isNull = true;
     this.name = "";
     this.species = "";
     this.isMale = true;
@@ -16,18 +16,23 @@ var Pokemon = function() {
     this.forms = [];
     this.weight = 0;
     this.height = 0;
+
+    // Custom
     this.value = 0;
     this.note = "";
+    this.holderClasses = [];
 };
 
 Pokemon.prototype.init = function(apiData) {
+    var types = apiData.types.reverse();
+
     this.name = this.species = apiData.name.capitalize();
     this.imgs = apiData.sprites;
     this.weight = apiData.weight;
     this.height = apiData.height;
     this.stats = apiData.stats;
     this.abilities = apiData.abilities.reverse();
-    this.types = apiData.types.reverse();
+    this.types = types;
     this.moves = apiData.moves;
     this.femaleOption = typeof apiData.sprites.front_female !== "undefined";
     this.multipleForms = apiData.forms.length > 1;
@@ -35,33 +40,25 @@ Pokemon.prototype.init = function(apiData) {
     this.forms = apiData.forms;
 
     this.value = this.calculateValue();
-}
+    this.holderClasses = this.getHolderClasses(types);
+};
 
-Pokemon.prototype.transferIn = function(pkmn) {
-    this.name = pkmn.name;
-    this.species = pkmn.species;
-    this.imgs = pkmn.imgs;
-    this.weight = pkmn.weight;
-    this.height = pkmn.height;
-    this.stats = pkmn.stats;
-    this.abilities = pkmn.abilities;
-    this.types = pkmn.types;
-    this.moves = pkmn.moves;
-    this.femaleOption = pkmn.femaleOption;
-    this.multipleForms = pkmn.multipleForms;
-    this.imgSrc = pkmn.imgSrc;
-    this.isShiny = pkmn.isShiny;
-    this.isMale = pkmn.isMale;
-    this.forms = pkmn.forms;
-    this.value = pkmn.value;
-    this.note = this.note;
-}
+Pokemon.prototype.transferIn = function(pkmn, isTeamMember) {
+    for (var key in pkmn) {
+        if (pkmn.hasOwnProperty(key) && this.hasOwnProperty(key)) {
+            this[key] = pkmn[key];
+        }
+    }
+
+    this.isTeamMember = isTeamMember ? true : false;
+    this.isNull = pkmn == new Pokemon();
+};
 
 Pokemon.prototype.empty = function() {
     var new_pkmn = new Pokemon();
 
     this.transferIn(new_pkmn);
-}
+};
 
 Pokemon.prototype.updateImg = function() {
     var imgs = this.imgs,
@@ -84,7 +81,21 @@ Pokemon.prototype.updateImg = function() {
     this.imgSrc = updatedImg;
 
     return updatedImg;
-}
+};
+
+Pokemon.prototype.getHolderClasses = function (types) {
+    var classes = [];
+
+    types.forEach(function (typeObj, idx) {
+        if (idx === 0) {
+            classes.push(typeObj.type.name);
+        } else {
+            classes.push(typeObj.type.name + '-border');
+        }
+    });
+
+    return classes;
+};
 
 Pokemon.prototype.calculateValue = function() {
     var baseValue = 0,

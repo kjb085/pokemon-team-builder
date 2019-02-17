@@ -2,17 +2,13 @@ var User = function() {
     this.email = "";
     this.uid = "";
     this.isLoggedIn = false;
-    this.team = [];
-    this.moneyRemaining = 0;
-    this.existingTeamCount = 0;
+    this.existingTeams = [];
+    this.authHelper = null;
+    this.contentHelper = null;
 
-    this.init = function(teamSize, startingMoney) {
-        for (var i = 0; i < teamSize; i++) {
-            var tempPkmn = new Pokemon();
-            this.team.push(tempPkmn);
-        }
-
-        this.moneyRemaining = startingMoney;
+    this.init = function(authHelper, contentHelper) {
+        this.authHelper = authHelper;
+        this.contentHelper = contentHelper;
     };
 
     this.signUp = function(info) {
@@ -29,122 +25,84 @@ var User = function() {
             return;
         }
 
-        firebase.auth().createUserWithEmailAndPassword(info.email, info.pass).catch(function(err) {
-            if (err.message) {
-                swal(err.message);
-                user.isLoggedIn = false;
-                user.email = "";
-            }
-        });
-
-        this.email = info.email;
-        this.isLoggedIn = true;
+        this.authHelper.signIn(this, info, true); // Invokes completeLogIn
 
         $('#sign-up').modal('hide');
     };
 
     this.signIn = function(info) {
-        var user = this;
-
-        firebase.auth().signInWithEmailAndPassword(info.email, info.pass).catch(function(err) {
-            if (err.message) {
-                swal(err.message);
-                user.isLoggedIn = false;
-                user.email = "";
-            }
-        });
-
-        this.email = info.email;
-        this.isLoggedIn = true;
+        this.authHelper.signIn(this, info, false); // Invokes completeLogIn
 
         $('#sign-in').modal('hide');
     };
 
+    this.completeLogIn = function (user, isNewUser) {
+        this.email = user.email;
+        this.uid = user.uid;
+        this.isLoggedIn = true;
+
+        if (!isNewUser) {
+            this.getExistingTeams();
+        }
+    };
+
     this.signOut = function() {
-        var user = this;
+        this.authHelper.signOut(this); // Invokes completeLogOut
+    };
 
-        firebase.auth().signOut().then(function() {
-            swal('Successfully signed out!');
-            user.isLoggedIn = false;
-            user.email = "";
-            user.uid = null;
-        }, function(error) {
-            swal("Couldn't log out. Please refresh and try again.");
+    this.completeLogOut = function () {
+        this.isLoggedIn = false;
+        this.email = "";
+        this.uid = null;
+        this.existingTeams = [];
+    };
+
+    this.getExistingTeams = function () {
+        var self = this;
+
+        this.contentHelper.getTeams(this, function (teams) {
+            self.existingTeams = teams;
         });
     };
 
-    this.addToTeam = function(pokemon) {
-        var success = false;
-
-        for (var i = 0 ; i < teamSize ; i++) {
-            if (this.team[i].species === "") {
-                this.team[i].transferIn(pokemon);
-                success = true;
-                break;
-            }
-        }
-
-        if (!success) {
-            swal('Your team is already full!');
-        }
-    };
-
-    this.removeFromTeam = function(index) {
-        this.team[index].empty();
-        $('#pokemon-detail').modal('hide');
-    };
-
-    this.updateTeamMember = function(detail) {
-        var index = detail.index;
-
-        if (detail.isTeamMember) {
-            this.team[index].transferIn(detail);
-        }
-    };
-
-    this.hasCompleteTeam = function() {
-        var emptySlots = 0;
-
-        this.team.forEach(function(pkmn) {
-            if (pkmn.species === "") {
-                emptySlots++;
-            }
-        });
-
-        return emptySlots === 0;
-    };
-
-    // this.getTeamApiData = function() {
-    //     var apiData = [];
-    //
-    //     this.team.forEach(function() {
-    //         var temp = {};
-    //
-    //         temp.
-    //     });
-    // };
-
-    this.saveTeam = function(name) {
-        if (!this.uid) {
-            swal('Not logged in. Please refresh the page and try again.');
-            return;
-        } else if (!this.hasCompleteTeam()) {
-            swal('Incomplete team');
-            return;
-        }
-
-        var id = this.existingTeamCount + 1,
-            name = typeof name !== "undefined" ? name : "Team " + id,
-            team = this.team,
+    this.saveTeam = function(team) {
+        var teamId = team.id ? team.id : this.existingTeams.length,
             teamObj = {
-                team: team,
-                name: name
+                id: teamId,
+                team: team.members,
+                name: team.name
             };
 
-        db.ref('user/' + this.uid + '/teams/' + id).set(teamObj);
+        if (!this.uid || !this.isLoggedIn) {
+            swal('Not logged in. Please refresh the page and try again.');
+            return;
+        } else if (!team.isComplete()) {
+            swal("Incomplete team! Please make sure your team is made up of 6 pokemon before saving.");
+            return;
+        }
+
+        if (!team.id) {
+            team.setId(teamId);
+        }
+        this.contentHelper.saveTeam(this, teamId, teamObj);
+        this.updateExistingTeams(teamObj);
+
+        swal('Team "' + team.name + '" successfully saved!');
     };
 
-    this.loadTeam = function() {
+    this.updateExistingTeams = function (team) {
+        var existingIndex = null;
 
+        this.existingTeams.forEach(function (existingTeam, index) {
+            if (existingTeam.id === team.id) {
+                existingIndex = index;
+            }
+        });
+
+        if (existingIndex) {
+            this.existingTeams[existingIndex] = team;
+        } else {
+            this.existingTeams.push(team);
+        }
     };
 }
