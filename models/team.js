@@ -11,19 +11,7 @@ function Team(name) {
     }
 };
 
-// Team.prototype.init = function() {
-//     for (var i = 0; i < this.maxSize; i++) {
-//         this.members.push(new Pokemon());
-//     }
-//
-//
-// };
-
-Team.prototype.getTeamMembers = function () {
-    return this.members;
-};
-
-Team.prototype.add = function(pokemon) {
+Team.prototype.add = function (pokemon) {
     var success = false;
 
     for (var i = 0; i < this.maxSize; i++) {
@@ -39,12 +27,18 @@ Team.prototype.add = function(pokemon) {
     }
 };
 
-Team.prototype.remove = function(index) {
+Team.prototype.remove = function (index) {
     this.members[index].empty();
-    $('#pokemon-detail').modal('hide');
+    // $('#pokemon-detail').modal('hide');
+
+    for (var i = index; i < this.maxSize; i++) {
+        if (!this.members[i].isNull()) {
+            this.moveLeft(i);
+        }
+    }
 };
 
-Team.prototype.updateTeamMember = function(detail) {
+Team.prototype.updateTeamMember = function (detail) {
     var index = detail.index;
 
     if (detail.isTeamMember) {
@@ -52,11 +46,11 @@ Team.prototype.updateTeamMember = function(detail) {
     }
 };
 
-Team.prototype.isComplete = function() {
+Team.prototype.isComplete = function () {
     var emptySlots = 0;
 
-    this.members.forEach(function(pkmn) {
-        if (pkmn.isNull) {
+    this.members.forEach(function (pkmn) {
+        if (pkmn.isNull()) {
             emptySlots++;
         }
     });
@@ -67,38 +61,32 @@ Team.prototype.isComplete = function() {
 Team.prototype.setId = function (id) {
     this.id = id;
 };
-// Team.prototype.getTeamApiData = function() {
-//     var apiData = [];
-//
-//     this.team.forEach(function() {
-//         var temp = {};
-//
-//         // temp.
-//     });
-// };
 
-Team.prototype.saveTeam = function(user) {
-    if (!user.uid) {
-        swal('Not logged in. Please refresh the page and try again.');
-        return;
-    } else if (!this.hasCompleteTeam()) {
-        swal('Incomplete team');
-        return;
-    }
+Team.prototype.load = function (toLoad) {
+    var self = this;
 
-    var id = this.existingTeamCount + 1,
-        name = typeof name !== "undefined" ? name : "Team " + id,
-        team = this.team,
-        teamObj = {
-            team: team,
-            name: name
-        };
+    this.id = toLoad.id;
+    this.name = toLoad.name;
 
-    db.ref('user/' + this.uid + '/teams/' + id).set(teamObj);
+    toLoad.team.forEach(function (teamMember, idx) {
+        self.members[idx].transferIn(teamMember);
+    });
+
+    app.closeModal();
 };
 
-Team.prototype.loadTeam = function(toLoad) {
-    this.id = toLoad.id;
-    this.members = toLoad.team;
-    this.name = toLoad.name;
+Team.prototype.moveLeft = function (index) {
+    this.move(index, index - 1);
+};
+
+Team.prototype.moveRight = function (index) {
+    this.move(index, index + 1);
+};
+
+Team.prototype.move = function (index, swapIndex) {
+    var swaper = this.members[index];
+
+    // Must use this to change index values and trigger a redraw
+    Vue.set(this.members, index, this.members[swapIndex]);
+    Vue.set(this.members, swapIndex, swaper);
 };

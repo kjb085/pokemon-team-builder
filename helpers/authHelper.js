@@ -11,12 +11,6 @@ AuthHelper.prototype.createAuthChangeListener = function () {
     this.firebase.auth().onAuthStateChanged(function (user) {
         if (user) {
             app.user.completeLogIn(user);
-
-            // console.log(user);
-            //
-            // db.ref('user/' + user.uid + '/team/').once('value').then(function(snapshot) {
-            //     console.log(snapshot);
-            // });
         }
     });
 };

@@ -1,13 +1,14 @@
 // Vue.js
 // register modal component
 Vue.component('modal', {
-  template: '#modal-template'
+    template: '#modal-template'
 });
 
 var app = new Vue({
     el: "#app",
     data: {
-        // teamOptionsToggle: false,
+        isShared: false,
+        sharedTeam: {},
         options: new Options(),
         detail: new Pokemon(),
         user: new User(),
@@ -23,12 +24,33 @@ var app = new Vue({
             pass: "",
             passConf: ""
         },
-        modal: {
-            loadTeam: false,
-        }
+        activeModal: null, // Options: signIn, signUp, loadTeam, share
     },
     mounted: function() {
-        this.getAuthHelper().createAuthChangeListener();
+        // Assume modern browser support
+        var urlParams = new URLSearchParams(window.location.search);
+            shareId = urlParams.get('shared'),
+            self = this;
+
+        this.isShared = !!shareId;
+
+        if (this.isShared) {
+            this.activeModal = 'loading';
+
+            this.getContentHelper().setSharedTeam(shareId, function (sharedTeam) {
+                if (sharedTeam) {
+                    sharedTeam.id = 0;
+                    self.sharedTeam = sharedTeam;
+                    self.team.load(sharedTeam);
+                } else {
+                    this.closeModal();
+                    swal('Sorry this team does not exist!');
+                }
+            });
+        } else {
+            this.getAuthHelper().createAuthChangeListener();
+        }
+
         this.user.init(this.getAuthHelper(), this.getContentHelper());
         this.options.init(this.getContentHelper());
     },
@@ -57,28 +79,26 @@ var app = new Vue({
             return this.helpers.auth;
         },
         updateDetailView: function(pokemon, isTeamMember, index) {
-            app.detail.index = index;
+            this.detail.index = index;
 
-            app.detail.transferIn(pokemon);
+            this.detail.transferIn(pokemon, isTeamMember);
             this.getGraphHelper().createGraph(pokemon.name, pokemon.stats);
 
-            console.log(this.detail);
-
-            $('#pokemon-detail').modal('show');
+            this.activeModal = 'detailView';
         },
         closeDetailView: function(detail) {
             if (detail.isTeamMember) {
-                app.team.updateTeamMember(detail);
+                this.team.updateTeamMember(detail);
             }
 
-            $('#pokemon-detail').modal('hide');
+            this.activeModal = null;
         },
         typeLink: function(type) {
             return "http://bulbapedia.bulbagarden.net/wiki/" + type + "_(type)";
         },
-        searchPokemon: function() {
-
-        },
+        closeModal: function() {
+            this.activeModal = null;
+        }
     },
     computed: {
         detailImg: function() {
@@ -88,7 +108,7 @@ var app = new Vue({
             var remaining = this.team.startingBudget;
 
             this.team.members.forEach(function(teamMember) {
-                remaining -= teamMember.value;
+                remaining -= teamMember.price;
             });
 
             if (remaining < 0) {
@@ -97,15 +117,16 @@ var app = new Vue({
 
             return parseFloat(remaining).toFixed(2);
         },
-        // detailInputs: function() {
-        //     // console.log(this.detail);
-        //     return this.detail.isTeamMember;
-        // }
     },
     watch: {
-        // detailImg: function() {
-        //     // console.log('watcher');
-        //     this.detail.updateImg();
-        // }
+        // Kind of hacky, but need to do this to utilize bootstrap
+        // modal classes, without using bootstrap js
+        activeModal: function () {
+            if (this.activeModal) {
+                document.body.classList.add('modal-open');
+            } else {
+                document.body.classList.remove('modal-open');
+            }
+        }
     }
 });

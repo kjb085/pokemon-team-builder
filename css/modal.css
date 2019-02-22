@@ -1,4 +1,4 @@
-modal-mask {
+.modal-mask {
   position: fixed;
   z-index: 9998;
   top: 0;
@@ -16,7 +16,8 @@ modal-mask {
 }
 
 .modal-container {
-  width: 300px;
+  /* width: 300px; */
+  width: 25vw;
   margin: 0px auto;
   padding: 20px 30px;
   background-color: #fff;

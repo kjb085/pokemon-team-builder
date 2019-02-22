@@ -1,0 +1,28 @@
+{
+  "name": "pokemon-team-builder",
+  "version": "1.0.0",
+  "description": "App to build and share pokemon teams using play money funds and algorithmically determined pokemon values",
+  "main": "app.js",
+  "dependencies": {
+    "firebase": "^5.8.6"
+  },
+  "devDependencies": {
+    "axios": "^0.18.0",
+    "cheerio": "^1.0.0-rc.2",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kjb085/pokemon-team-builder.git"
+  },
+  "author": "Kenn Breece",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kjb085/pokemon-team-builder/issues"
+  },
+  "homepage": "https://github.com/kjb085/pokemon-team-builder#readme"
+}

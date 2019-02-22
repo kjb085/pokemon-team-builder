@@ -1,5 +1,12 @@
 var GraphHelper = function () {
     this.graph = null;
+    this.statIndexes = [
+        "hp",
+        "attack",
+        "defense",
+        "special-defense",
+        "special-attack",
+    ];
 };
 
 GraphHelper.prototype.clearGraph = function() {
@@ -14,7 +21,7 @@ GraphHelper.prototype.createGraph = function(name, stats) {
             scale: {
                 ticks: {
                     beginAtZero: true,
-                    max: 260
+                    max: 250 // true max is 260, but set 250 for formatting purposes
                 }
             },
             responsive: true,
@@ -46,29 +53,10 @@ GraphHelper.prototype.getStatsArray = function(stats) {
         statsArr = [];
 
     stats.forEach(function (statObj) {
-        var idx = self.findGraphIdx(statObj);
+        var idx = self.statIndexes.indexOf(statObj.stat.name);
 
         statsArr[idx] = statObj.base_stat;
     });
 
     return statsArr;
 };
-
-GraphHelper.prototype.findGraphIdx = function(statObj) {
-    switch (statObj.stat.name) {
-        case "hp":
-            return 0;
-        case "attack":
-            return 1;
-        case "defense":
-            return 2;
-        case "speed":
-            return 3;
-        case "special-defense":
-            return 4;
-        case "special-attack":
-            return 5;
-        default:
-            return false;
-    }
-}

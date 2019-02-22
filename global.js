@@ -4,7 +4,13 @@
 var startingMoney = 100,
     maxBase = 700,
     maxType = 30,
-    optionsArr = [];
+    optionsArr = [],
+    pokemonIndex = 'pokemon-v2',
+    genders = {
+        genderless: 0,
+        male: 1,
+        female: 2,
+    };
 
 String.prototype.capitalize = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);

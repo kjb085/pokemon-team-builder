@@ -2,9 +2,10 @@ var User = function() {
     this.email = "";
     this.uid = "";
     this.isLoggedIn = false;
-    this.existingTeams = [];
+    this.existingTeams = null;
     this.authHelper = null;
     this.contentHelper = null;
+    this.loadingElipsesInterval = null;
 
     this.init = function(authHelper, contentHelper) {
         this.authHelper = authHelper;
@@ -26,20 +27,18 @@ var User = function() {
         }
 
         this.authHelper.signIn(this, info, true); // Invokes completeLogIn
-
-        $('#sign-up').modal('hide');
     };
 
     this.signIn = function(info) {
         this.authHelper.signIn(this, info, false); // Invokes completeLogIn
-
-        $('#sign-in').modal('hide');
     };
 
     this.completeLogIn = function (user, isNewUser) {
         this.email = user.email;
         this.uid = user.uid;
         this.isLoggedIn = true;
+
+        app.closeModal();
 
         if (!isNewUser) {
             this.getExistingTeams();
@@ -60,8 +59,26 @@ var User = function() {
     this.getExistingTeams = function () {
         var self = this;
 
+        this.loadingElipsesInterval = setInterval(function () {
+            var elipsesEl = document.querySelector('#loading-elipses'),
+                elipses;
+
+            if (elipsesEl) {
+                elipses = elipsesEl.innerHTML.split('');
+
+                if (elipses.length > 2) {
+                    elipses = [];
+                } else {
+                    elipses.push('.');
+                }
+
+                elipsesEl.innerHTML = elipses.join('');
+            }
+        }, 500);
+
         this.contentHelper.getTeams(this, function (teams) {
             self.existingTeams = teams;
+            clearInterval(self.loadingElipsesInterval);
         });
     };
 
@@ -75,9 +92,6 @@ var User = function() {
 
         if (!this.uid || !this.isLoggedIn) {
             swal('Not logged in. Please refresh the page and try again.');
-            return;
-        } else if (!team.isComplete()) {
-            swal("Incomplete team! Please make sure your team is made up of 6 pokemon before saving.");
             return;
         }
 
@@ -104,5 +118,23 @@ var User = function() {
         } else {
             this.existingTeams.push(team);
         }
+    };
+
+    this.shareTeam = function (team) {
+        var sharedUrl = null;
+
+        if (team.members.length < team.maxSize) {
+            swal('Must have ' + team.maxSize + ' team members to save!');
+        }
+
+         sharedUrl = this.contentHelper.shareTeam(this.email, team);
+
+         app.closeModal();
+
+         if (sharedUrl) {
+             swal("Here's the URL you can use to share your team: " + sharedUrl);
+         } else {
+             swal('An unexpected error has occurred - please check your internet connection and try again');
+         }
     };
 }

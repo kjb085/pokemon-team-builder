@@ -1,47 +1,46 @@
 <!DOCTYPE html>
 <head>
+    <!-- Third party CSS -->
     <link href='css/bootstrap.min.css' rel='stylesheet'>
     <link href='css/font-awesome.min.css' rel='stylesheet'>
     <link href='css/sweetalert.css' rel='stylesheet'>
+    <!-- Custom CSS -->
     <link href='css/style.css' rel='stylesheet'>
     <link href='css/types.css' rel='stylesheet'>
     <link href='css/modal.css' rel='stylesheet'>
+    <!-- Third party libraries -->
     <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js'></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js'></script>
-    <!-- template for the modal component -->
+    <!-- Modal templates -->
     <script type="text/x-template" id="modal-template">
-      <transition name="modal">
-        <div class="modal-mask">
-          <div class="modal-wrapper">
-            <div class="modal-container">
+        <transition name="modal">
+            <div class="modal-mask">
+                <div class="modal-wrapper">
+                    <div class="modal-container">
 
-              <div class="modal-header">
-                <slot name="header">
-                  default header
-                </slot>
-              </div>
+                        <div class="modal-header">
+                            <slot name="header"></slot>
+                        </div>
 
-              <div class="modal-body">
-                <slot name="body">
-                  default body
-                </slot>
-              </div>
+                        <div class="modal-body">
+                            <slot name="body"></slot>
+                        </div>
 
-              <div class="modal-footer">
-                <slot name="footer">
-                  default footer
-                  <button class="modal-default-button" @click="$emit('close')">
-                    OK
-                  </button>
-                </slot>
-              </div>
+                        <div class="modal-footer">
+                              <slot name="footer">
+                                    <button class="btn btn-danger" @click="$emit('close')">
+                                        Close
+                                    </button>
+                              </slot>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      </transition>
+        </transition>
     </script>
 </head>
 <body>
+    <!-- v-bind:class="{'modal-open': activeModal !== null}" -->
 <div id="app">
     <div class="jumbotron shrink-padding">
         <div class="container-fluid">
@@ -69,13 +68,20 @@
             </div>
             <div class="row row-buffer">
                 <div id='user-team'>
-                    <div v-for="(teamMember, index) in team.members" class='team-holder col-sm-2' v-bind:class="teamMember.holderClasses">
-                        <!-- {{teamMember.types[0].name}}-border -->
+                    <div v-for="(teamMember, index) in team.members" class='team-holder' v-bind:class="teamMember.holderClasses">
+                        <div v-if="!teamMember.isNull()" class="team-member-action remove" @click="team.remove(index)">
+                            <i class="fa fa-close"></i>
+                        </div>
                         <div class='team-contents text-center' v-if="teamMember.name">
-                            <div v-if="teamMember" class=''></div>
                             <h2>{{teamMember.name}}</h2>
                             <img v-show="true" v-bind:src="teamMember.imgSrc" height="180" width="180">
-                            <p>${{teamMember.value}} <a class="btn btn-primary" role="button" v-on:click='updateDetailView(teamMember, true, index)' >Details</a></p> <!-- data-toggle="modal" data-target="#pokemon-detail" -->
+                            <p>${{teamMember.price}} <a class="btn btn-primary" role="button" v-on:click='updateDetailView(teamMember, true, index)' >Details</a></p> <!-- data-toggle="modal" data-target="#pokemon-detail" -->
+                        </div>
+                        <div v-if="!teamMember.isNull() && index !== 0" class="team-member-action move-left" @click="team.moveLeft(index)">
+                            <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                        </div>
+                        <div v-if="!teamMember.isNull() && index !== team.maxSize - 1 && !team.members[index + 1].isNull()" class="team-member-action move-right" @click="team.moveRight(index)">
+                            <i class="fa fa-arrow-right" aria-hidden="true"></i>
                         </div>
                     </div>
                 </div>
@@ -83,21 +89,21 @@
             <div class="row">
                 <div v-show="!user.isLoggedIn">
                     <div class="col-sm-1">
-                        <a class="btn btn-success" data-toggle="modal" data-target="#sign-up">Sign Up</a>
+                        <a class="btn btn-success" data-toggle="modal" @click="activeModal = 'signUp'">Sign Up</a>
                     </div>
                     <div class="col-sm-3">
-                        <a class="btn btn-default" data-toggle="modal" data-target="#sign-in">Sign In</a>
+                        <a class="btn btn-default" data-toggle="modal"  @click="activeModal = 'signIn'">Sign In</a>
                     </div>
                 </div>
                 <div v-show="user.isLoggedIn">
                     <div class="col-sm-1">
-                        <a class="btn btn-success" v-on:click="user.saveTeam(team)">Save</a>
+                        <a class="btn btn-success" @click="user.saveTeam(team)">Save</a>
                     </div>
                     <div class="col-sm-1">
-                        <a class="btn btn-primary" @click="modal.loadTeam = true">Load</a>
+                        <a class="btn btn-primary" @click="activeModal = 'loadTeam'">Load</a>
                     </div>
                     <div class="col-sm-1">
-                        <a class="btn btn-info">Share</a>
+                        <a class="btn btn-info" @click="activeModal = 'share'">Share</a>
                     </div>
                     <div class="col-sm-1">
                         <a class="btn btn-danger" v-on:click="user.signOut()">Log Out</a>
@@ -107,29 +113,76 @@
         </div>
     </div>
 
-    <div class="container">
-          <!-- Example row of columns -->
+    <div v-if="!isShared" class="container-fluid">
+        <div class="row row-buffer" style="margin-top: 20px; display: flex;">
+            <div class="col-sm-2">
+                <label>Name: </label>
+                <input v-model="options.filters.name" class="form-control" />
+            </div>
+            <div class="col-sm-2">
+                <label>Min Price:</label>
+                <input type="number" min="0" max="100" v-model="options.filters.minPrice" class="form-control" />
+            </div>
+            <div class="col-sm-2">
+                <label>Max Price:</label>
+                <input type="number" min="0" max="100" v-model="options.filters.maxPrice" class="form-control" />
+            </div>
+            <div class="col-sm-2">
+                <label>Primary Type:</label>
+                <select v-model="options.filters.primaryType" class="form-control">
+                    <option v-for="type in options.filterOptions.types" v-model="type">{{type.capitalize()}}</option>
+                </select>
+            </div>
+            <div class="col-sm-2">
+                <label>Secondary Type:</label>
+                <select v-model="options.filters.secondaryType" class="form-control">
+                    <option v-for="type in options.filterOptions.types" v-model="type">{{type.capitalize()}}</option>
+                </select>
+            </div>
+            <div class="col-sm-2">
+                <label>Order:</label>
+                <select v-model="options.filters.order" class="form-control">
+                    <option v-for="order in options.filterOptions.orders" v-bind:value="order.value">{{order.text.capitalize()}}</option>
+                </select>
+            </div>
+            <div class="col-sm-2" style="display: flex; align-items: center; justify-content: center;">
+                <button class="btn btn-success" style="font-size: 24px; padding: 12px 20px;" @click="options.filteredSearch()">Search!</button>
+            </div>
+        </div>
+    </div>
+    <div v-if="!isShared" class="container">
         <div class="row" style="display: flex;">
             <div class="col-md-1 col-md-offset-1 cycle-container text-center" style=""> <!-- change this to half offset -->
                 <i v-on:click='options.cycle(false)' class="fa big-arrow fa-arrow-left" aria-hidden="true"></i>
                 <input v-model='options.jump.left' class='form-control' type='number' min='1' />
             </div>
-            <div v-for="option in options.pokemon" class="col-md-3 text-center">
-                <h2>{{option.name}}</h2>
-                <img v-show="true" v-bind:src="option.imgSrc" height="180" width="180">
-                <p>${{option.value}}</p>
-                <p><button type="button" v-on:click="team.add(option)" class="btn btn-success" role="button">Add</button></p>
-                <p><a class="btn btn-primary" role="button" v-on:click='updateDetailView(option, false)' >Details</a></p> <!-- data-toggle="modal" data-target="#pokemon-detail" -->
+            <div v-for="option in options.pokemon" class="col-md-3 option text-center" style="height: 400px;">
+                <div v-if="!option.isNull()">
+                    <h2>{{option.name}}</h2>
+                    <img v-show="true" v-bind:src="option.imgSrc" height="180" width="180">
+                    <p>${{option.price}}</p>
+                    <p><button type="button" v-on:click="team.add(option)" class="btn btn-success" role="button">Add</button></p>
+                    <p><a class="btn btn-primary" role="button" v-on:click='updateDetailView(option, false)'>Details</a></p>
+                </div>
+                <div v-else>
+                    <img src="images/loading.gif" class="loading-gif" />
+                </div>
             </div>
             <div class="col-md-1 cycle-container text-center">
                 <i v-on:click='options.cycle(true)' class="fa big-arrow fa-arrow-right" aria-hidden="true"></i>
                 <input v-model='options.jump.right' class='form-control' type='number' min='1' />
             </div>
         </div>
-
-        <hr>
-
     </div>
+    <div v-else class="container">
+        <div class="row">
+            <div class="col-sm-12">
+                <h3>Team by: {{sharedTeam.email}}</h3>
+            </div>
+        </div>
+    </div>
+
+    <hr>
 
     <div class="container">
       <footer>
@@ -137,95 +190,57 @@
       </footer>
     </div> <!-- /container -->
 
-    <!-- Search view -->
-    <div id="pokemon-search" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-content">
-            <!-- Close button -->
-            <div class="close-modal" data-dismiss="modal">
-                <div class="lr">
-                    <div class="rl"></div>
+    <modal v-if="activeModal === 'signIn'" @close="activeModal = null">
+        <h2 slot="header">Sign In</h2>
+        <div slot="body">
+            <div id='sign-in-input'>
+                <div class='input-group'>
+                    <span class='input-group-addon'>Email:</span>
+                    <input id='sign-in-email' v-model='signInUp.email' class='form-control' type='email'>
                 </div>
-            </div>
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-8 col-lg-offset-2">
-                        <div class="modal-title">
-                            <h2></h2>
-                        </div>
-                    </div>
+                <div class='input-group'>
+                    <span class='input-group-addon'>Password:</span>
+                    <input id='sign-in-password' v-model='signInUp.pass' class='form-control' type='password'>
                 </div>
-                <div class="row"></div>
-                <div class="row modal-body"></div>
             </div>
         </div>
-    </div>
+        <div slot="footer">
+            <div class='text-center'>
+                <button class="btn btn-success" v-on:click="user.signIn(signInUp, this)">Sign In</button>
+                <button class="btn btn-default" @click="closeModal()">Maybe Later</button>
+            </div>
+        </div>
+    </modal>
 
-    <!-- Sign Up -->
-    <div id="sign-up" class="modal fade modal-vertical-centered" role="dialog">
-        <div class="modal-dialog">
-            <!-- Modal content-->
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Sign Up</h4>
+    <modal v-if="activeModal === 'signUp'" @close="activeModal = null">
+        <h2 slot="header">Sign Up</h2>
+        <div slot="body">
+            <div id='sign-up-input'>
+                <div class='input-group'>
+                    <span class='input-group-addon'>Email:</span>
+                    <input id='sign-in-email' v-model='signInUp.email' class='form-control' type='email'>
                 </div>
-                <div class="modal-body">
-                    <div id='sign-up-input' style='width: 400px'>
-                        <div class='input-group'>
-                            <span class='input-group-addon'>Email:</span>
-                            <input id='sign-up-email' v-model="signInUp.email" class='form-control' type='email'>
-                        </div>
-                        <div class='input-group'>
-                            <span class='input-group-addon'>Password:</span>
-                            <input id='sign-up-password' v-model="signInUp.pass" class='form-control' type='password'>
-                        </div>
-                        <div class='input-group'>
-                            <span class='input-group-addon'>Confirm Password:</span>
-                            <input id='sign-up-password-conf' v-model="signInUp.passConf" class='form-control' type='password'>
-                        </div>
-                    </div>
+                <div class='input-group'>
+                    <span class='input-group-addon'>Password:</span>
+                    <input id='sign-in-password' v-model='signInUp.pass' class='form-control' type='password'>
                 </div>
-                <div class="modal-footer">
-                    <div class='text-center'>
-                        <button class="btn btn-success" v-on:click="user.signUp(signInUp)" role="button">Sign Up</button>
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Just Kidding</button>
-                    </div>
+                <div class='input-group'>
+                    <span class='input-group-addon'>Confirm Password:</span>
+                    <input id='sign-up-password-conf' v-model="signInUp.passConf" class='form-control' type='password'>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Sign In -->
-    <div id="sign-in" class="modal fade modal-vertical-centered" role="dialog">
-        <div class="modal-dialog">
-            <!-- Modal content-->
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Sign In</h4>
-                </div>
-                <div class="modal-body">
-                    <div id='sign-up-input' style='width: 400px'>
-                        <div class='input-group'>
-                            <span class='input-group-addon'>Email:</span>
-                            <input id='sign-in-email' v-model='signInUp.email' class='form-control' type='email'>
-                        </div>
-                        <div class='input-group'>
-                            <span class='input-group-addon'>Password:</span>
-                            <input id='sign-in-password' v-model='signInUp.pass' class='form-control' type='password'>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <div class='text-center'>
-                        <a class="btn btn-success" v-on:click="user.signIn(signInUp)">Sign In</a>
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Maybe Later</button>
-                    </div>
-                </div>
+        <div slot="footer">
+            <div class='text-center'>
+                <button class="btn btn-success" @click="user.signUp(signInUp, this)">Sign Up</button>
+                <button class="btn btn-default" @click="closeModal()">Just Kidding</button>
             </div>
         </div>
-    </div>
+    </modal>
 
     <!-- Detail view -->
-    <div id="pokemon-detail" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <div id="pokemon-detail" v-bind:class="{in: activeModal === 'detailView'}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-content">
             <!-- Close button -->
             <div class="close-modal" v-on:click="closeDetailView(detail)"> <!-- data-dismiss="modal" -->
@@ -260,8 +275,18 @@
                             <div class="input-group">
                                 <span class="input-group-addon">Gender:</span>
                                 <div style="display: flex;">
-                                    <span style="align-self: center;">Male: </span><input class="form-control" type="radio" v-model="detail.isMale" v-bind:value="true"  />
-                                    <span style="align-self: center;">Female: </span><input class="form-control" type="radio" v-model="detail.isMale" v-bind:value="false" />
+                                    <div v-if="detail.displayGenderOption('male')">
+                                        <span style="align-self: center;">Male: </span>
+                                        <input class="form-control" type="radio" v-model="detail.gender" v-bind:value="genders.male"  />
+                                    </div>
+                                    <span v-if="detail.displayGenderOption('female')">
+                                        <span style="align-self: center;">Female: </span>
+                                        <input class="form-control" type="radio" v-model="detail.gender" v-bind:value="genders.female" />
+                                    </span>
+                                    <span v-if="detail.genderType === 'genderless'">
+                                        <span style="align-self: center;">Genderless: </span>
+                                        <input class="form-control" type="radio" v-model="detail.gender" v-bind:value="genders.genderless" />
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -299,17 +324,50 @@
         </div>
     </div>
 
-    <modal v-if="modal.loadTeam" @close="modal.loadTeam = false">
-        <h2>Teams</h2>
-        <ul>
-            <li v-for="existingTeam in user.existingTeams">
-                {{existingTeam.name}}
-                <div class="btn btn-primary" @click="team.load(existingTeam)">
-                    Load
-                </div>
-            </li>
-        </ul>
-        <h3 slot="header">custom header</h3>
+    <modal v-if="activeModal === 'loadTeam'" @close="activeModal = null">
+        <h2 slot="header">Teams</h2>
+        <div slot="body">
+            <div v-if="user.existingTeams === null">
+                <h2>Loading<span id="loading-elipses"></span></h2>
+            </div>
+            <div v-else-if="!user.existingTeams.length">
+                <h2>No saved teams</h2>
+            </div>
+            <div v-else>
+                <ul class="existing-teams">
+                    <li v-for="existingTeam in user.existingTeams">
+                        {{existingTeam.name}}
+                        <div class="btn btn-primary" @click="team.load(existingTeam)">
+                            Load
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </modal>
+
+    <modal v-if="activeModal === 'share'" @close="activeModal = null">
+        <h2 slot="header">Share</h2>
+        <div slot="body">
+            Are you sure you want to share your team? Once you click share, you won't be able to make further changes.
+            (You can always re-share a team after you make modifications with a new link)
+        </div>
+        <div slot="footer">
+            <div class='text-center'>
+                <button class="btn btn-success" @click="user.shareTeam(team)">Let's do it!</button>
+                <button class="btn btn-default" @click="closeModal()">On second thought...</button>
+            </div>
+        </div>
+    </modal>
+
+    <modal v-if="activeModal === 'loading'" @close="activeModal = null">
+        <h2 slot="header">Loading</h2>
+        <div slot="body">
+            We're getting that team for you! Just hold on a few seconds!
+        </div>
+        <div slot="footer">
+            <div class='text-center'></div>
+        </div>
     </modal>
 </div>
 
@@ -330,7 +388,7 @@
 </script>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.9/vue.min.js'></script>
 <!-- <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.6/vue.min.js'></script> -->
-<script src='js/bootstrap.min.js'></script>
+<!-- <script src='js/bootstrap.min.js'></script> -->
 <script src='global.js'></script>
 <script src='helpers/authHelper.js'></script>
 <script src='helpers/contentHelper.js'></script>
